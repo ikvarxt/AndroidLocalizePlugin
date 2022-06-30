@@ -18,8 +18,11 @@ repositories {
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
   pluginName.set(properties("pluginName"))
-  version.set(properties("platformVersion"))
-  type.set(properties("platformType"))
+//  version.set(properties("platformVersion"))
+//  type.set(properties("platformType"))
+
+  // using local idea for develop
+  localPath.set("/Applications/IntelliJ IDEA CE.app/Contents")
 
   // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file.
   plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))

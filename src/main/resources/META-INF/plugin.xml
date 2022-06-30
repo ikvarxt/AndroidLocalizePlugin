@@ -64,7 +64,7 @@
                 text="Translate to Other Languages"
                 icon="PluginIcons.TRANSLATE_ACTION_ICON"
                 description="Translate strings to other languages.">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="EditSource"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
         </action>
     </actions>
 </idea-plugin>
