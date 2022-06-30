@@ -18,6 +18,7 @@
 package com.airsaid.localization.services;
 
 import com.airsaid.localization.translate.lang.Lang;
+import com.airsaid.localization.translate.lang.Languages;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.components.ServiceManager;
@@ -57,6 +58,8 @@ public final class AndroidValuesService {
   private static final String NAME_STRINGS_FILE = "strings.xml";
   private static final String NAME_PLURALS_FILE = "plurals.xml";
   private static final String NAME_ARRAYS_FILE = "arrays.xml";
+
+  private static final String NAME_DEFAULT_VALUES = "values";
 
   /**
    * Returns the {@link AndroidValuesService} object instance.
@@ -183,6 +186,24 @@ public final class AndroidValuesService {
   }
 
   /**
+   * Get the value file of app default strings.xml
+   *
+   * @param project     current project.
+   * @param resourceDir default resource directory
+   * @return the default value file in PSI formats
+   */
+  @Nullable
+  public PsiFile getDefaultValuesPsiFile(@NotNull Project project, @NotNull VirtualFile resourceDir) {
+    return ApplicationManager.getApplication().runReadAction((Computable<PsiFile>) () -> {
+      VirtualFile virtualFile = LocalFileSystem.getInstance().findFileByIoFile(getDefaultValueFile(resourceDir));
+      if (virtualFile == null) {
+        return null;
+      }
+      return PsiManager.getInstance(project).findFile(virtualFile);
+    });
+  }
+
+  /**
    * Get the value file in the {@code values} directory of the specified language in the resource directory.
    *
    * @param resourceDir specified resource directory.
@@ -200,6 +221,16 @@ public final class AndroidValuesService {
   }
 
   /**
+   * Get the default strings.xml file in the default values directory
+   *
+   * @param resourceDir project default resource directory
+   * @return the default value file
+   */
+  public File getDefaultValueFile(@NotNull VirtualFile resourceDir) {
+    return new File(resourceDir.getPath().concat(File.separator).concat("values"), NAME_STRINGS_FILE);
+  }
+
+  /**
    * Returns whether the specified xml tag (string entry) needs to be translated.
    *
    * @param xmlTag the specified xml tag of string entry.
@@ -210,5 +241,59 @@ public final class AndroidValuesService {
       String translatableStr = xmlTag.getAttributeValue("translatable");
       return Boolean.parseBoolean(translatableStr == null ? "true" : translatableStr);
     });
+  }
+
+  /**
+   * Returns is the given file is correct Android res directory
+   *
+   * @param file /src/main/res file in Android Project
+   * @return if the given directory is Android res directory
+   */
+  public boolean isValidResDir(@Nullable PsiFile file) {
+    if (file == null) return false;
+
+    PsiDirectory resDirs = file.getContainingDirectory();
+    if (resDirs == null) return false;
+
+    PsiFile[] files = resDirs.getFiles();
+
+    for (PsiFile item : files) {
+      if (item.getName().equals(NAME_DEFAULT_VALUES)) {
+        PsiDirectory valuesDir = item.getContainingDirectory();
+        for (PsiFile stringFile : valuesDir.getFiles()) {
+          if (NAME_STRINGS_FILE.equals(stringFile.getName())) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  public boolean isValidResDir(@Nullable VirtualFile file) {
+    if (file == null) return false;
+
+    VirtualFile valuesDir = file.findChild(NAME_DEFAULT_VALUES);
+    if (valuesDir == null) return false;
+
+    VirtualFile stringFile = valuesDir.findChild(NAME_STRINGS_FILE);
+    return stringFile != null;
+  }
+
+  public List<Lang> getExistsLang(@Nullable VirtualFile resourceDir) {
+    List<Lang> res = new ArrayList<>();
+    if (resourceDir == null) return res;
+
+    for (VirtualFile subDirs : resourceDir.getChildren()) {
+      String dirName = subDirs.getName();
+      if (dirName.startsWith(NAME_DEFAULT_VALUES + '-')) {
+        String langCode = dirName.split("-", 2)[1];
+        Lang lang = Languages.getLang(langCode);
+
+        if (lang != null) res.add(lang);
+      }
+    }
+
+    return res;
   }
 }

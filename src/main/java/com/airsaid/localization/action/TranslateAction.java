@@ -20,13 +20,12 @@ package com.airsaid.localization.action;
 import com.airsaid.localization.config.SettingsState;
 import com.airsaid.localization.services.AndroidValuesService;
 import com.airsaid.localization.task.TranslateTask;
-import com.airsaid.localization.translate.lang.Lang;
-import com.airsaid.localization.ui.SelectLanguagesDialog;
 import com.airsaid.localization.utils.NotificationUtil;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.xml.XmlTag;
@@ -39,9 +38,10 @@ import java.util.List;
  *
  * @author airsaid
  */
-public class TranslateAction extends AnAction implements SelectLanguagesDialog.OnClickListener {
+public class TranslateAction extends AnAction {
 
   private Project mProject;
+  // the original strings.xml file that stores in res/ directory
   private PsiFile mValueFile;
   private List<PsiElement> mValues;
   private final AndroidValuesService mValueService = AndroidValuesService.getInstance();
@@ -49,17 +49,22 @@ public class TranslateAction extends AnAction implements SelectLanguagesDialog.O
   @Override
   public void actionPerformed(AnActionEvent e) {
     mProject = e.getRequiredData(CommonDataKeys.PROJECT);
-    mValueFile = e.getRequiredData(CommonDataKeys.PSI_FILE);
+    // TODO: 6/30/22 should here using PSI_FILE
+    VirtualFile resDir = e.getRequiredData(CommonDataKeys.VIRTUAL_FILE);
+
+    mValueFile = mValueService.getDefaultValuesPsiFile(mProject, resDir);
 
     SettingsState.getInstance().initSetting();
 
+    // load values file from disk
     mValueService.loadValuesByAsync(mValueFile, values -> {
       if (!isTranslatable(values)) {
         NotificationUtil.notifyInfo(mProject, "The " + mValueFile.getName() + " has no text to translate.");
         return;
       }
       mValues = values;
-      showSelectLanguageDialog();
+
+      doTranslate();
     });
   }
 
@@ -75,23 +80,19 @@ public class TranslateAction extends AnAction implements SelectLanguagesDialog.O
     return false;
   }
 
-  private void showSelectLanguageDialog() {
-    SelectLanguagesDialog dialog = new SelectLanguagesDialog(mProject);
-    dialog.setOnClickListener(this);
-    dialog.show();
-  }
-
   @Override
   public void update(@NotNull AnActionEvent e) {
     // The translation option is only show when strings.xml/plurals.xml/arrays.xml is selected
     Project project = e.getData(CommonDataKeys.PROJECT);
-    boolean isSelectValueFile = mValueService.isValueFile(e.getData(CommonDataKeys.PSI_FILE));
-    e.getPresentation().setEnabledAndVisible(project != null && isSelectValueFile);
+    // TODO: 6/30/22 should get file with psi file
+    VirtualFile resDirFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
+
+    boolean isValidResDir = mValueService.isValidResDir(resDirFile);
+    e.getPresentation().setEnabledAndVisible(project != null && isValidResDir);
   }
 
-  @Override
-  public void onClickListener(List<Lang> selectedLanguage) {
-    TranslateTask translationTask = new TranslateTask(mProject, "Translating...", selectedLanguage, mValues, mValueFile);
+  private void doTranslate() {
+    TranslateTask translationTask = new TranslateTask(mProject, "Translating...", mValues, mValueFile);
     translationTask.setOnTranslateListener(new TranslateTask.OnTranslateListener() {
       @Override
       public void onTranslateSuccess() {

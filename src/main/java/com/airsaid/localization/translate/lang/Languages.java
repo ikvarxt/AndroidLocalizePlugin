@@ -17,6 +17,8 @@
 
 package com.airsaid.localization.translate.lang;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.*;
 
 /**
@@ -144,6 +146,8 @@ public class Languages {
   public static final Lang TONGAN = new Lang(116, "to", "lea fakatonga", "Tongan");
   public static final Lang YUCATEC_MAYA = new Lang(117, "yua", "Yucatec Maya", "Yucatec Maya");
 
+  public static final Lang DEFAULT = new Lang(118, "", "Default", "Deflault");
+
   private static final Map<Integer, Lang> sLanguages;
 
   static {
@@ -266,10 +270,25 @@ public class Languages {
     sLanguages.put(115, TIGRINYA);
     sLanguages.put(116, TONGAN);
     sLanguages.put(117, YUCATEC_MAYA);
+    sLanguages.put(118, DEFAULT);
   }
 
   public static List<Lang> getLanguages() {
     return List.copyOf(sLanguages.values());
   }
 
+  @Nullable
+  public static Lang getLang(int id) {
+    return sLanguages.get(id);
+  }
+
+  @Nullable
+  public static Lang getLang(String code) {
+    for (Lang lang : sLanguages.values()) {
+      if (lang.getCode().equals(code)) {
+        return lang;
+      }
+    }
+    return null;
+  }
 }

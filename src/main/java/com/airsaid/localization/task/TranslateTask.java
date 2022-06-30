@@ -76,14 +76,16 @@ public class TranslateTask extends Task.Backgroundable {
     void onTranslateError(Throwable e);
   }
 
-  public TranslateTask(@Nullable Project project, @Nls @NotNull String title, List<Lang> languages,
+  public TranslateTask(@Nullable Project project, @Nls @NotNull String title,
                        List<PsiElement> values, PsiFile valueFile) {
     super(project, title);
-    mToLanguages = languages;
+
     mValues = values;
     mValueFile = valueFile.getVirtualFile();
     mTranslatorService = TranslatorService.getInstance();
     mValueService = AndroidValuesService.getInstance();
+
+    mToLanguages = getExistsLanguages();
   }
 
   /**
@@ -223,6 +225,14 @@ public class TranslateTask extends Task.Backgroundable {
       ApplicationManager.getApplication().invokeLater(() ->
           FileEditorManager.getInstance(myProject).openFile(virtualFile, true));
     }
+  }
+
+  private List<Lang> getExistsLanguages() {
+    List<Lang> res = new ArrayList<>();
+    VirtualFile resourceDir = mValueFile.getParent().getParent();
+    if (resourceDir == null) return res;
+
+    return mValueService.getExistsLang(resourceDir);
   }
 
   @Override
