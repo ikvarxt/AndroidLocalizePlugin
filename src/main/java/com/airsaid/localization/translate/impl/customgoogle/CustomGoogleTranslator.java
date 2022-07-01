@@ -112,41 +112,39 @@ public class CustomGoogleTranslator extends AbsGoogleTranslator {
     return googleTranslationResult.getTranslationResult();
   }
 
-  private static final String getTokenJs = """
-      function GetToken(a) {
-          var k = "";
-          var b = 406644;
-          var b1 = 3293161072;
-          var jd = ".";
-          var $b = "+-a^+6";
-          var Zb = "+-3^+b+-f";
-          for (var e = [], f = 0, g = 0; g < a.length; g++) {
-              var m = a.charCodeAt(g);
-              128 > m ? e[f++] = m : (2048 > m ? e[f++] = m >> 6 | 192 : (55296 == (m & 64512) && g + 1 < a.length && 56320 == (a.charCodeAt(g + 1) & 64512) ? (m = 65536 + ((m & 1023) << 10) + (a.charCodeAt(++g) & 1023),
-              e[f++] = m >> 18 | 240,
-              e[f++] = m >> 12 & 63 | 128) : e[f++] = m >> 12 | 224,
-              e[f++] = m >> 6 & 63 | 128),
-              e[f++] = m & 63 | 128)
-          }
-          a = b;
-          for (f = 0; f < e.length; f++) a += e[f],
-          a = RL(a, $b);
-          a = RL(a, Zb);
-          a ^= b1 || 0;
-          0 > a && (a = (a & 2147483647) + 2147483648);
-          a %= 1E6;
-          return a.toString() + jd + (a ^ b)
-      };
-      function RL(a, b) {
-          var t = "a";
-          var Yb = "+";
-          for (var c = 0; c < b.length - 2; c += 3) {
-              var d = b.charAt(c + 2),
-              d = d >= t ? d.charCodeAt(0) - 87 : Number(d),
-              d = b.charAt(c + 1) == Yb ? a >>> d: a << d;
-              a = b.charAt(c) == Yb ? a + d & 4294967295 : a ^ d
-          }
-          return a
-      }
-      """;
+  private static final String getTokenJs = "      function GetToken(a) {\n" +
+      "          var k = \"\";\n" +
+      "          var b = 406644;\n" +
+      "          var b1 = 3293161072;\n" +
+      "          var jd = \".\";\n" +
+      "          var $b = \"+-a^+6\";\n" +
+      "          var Zb = \"+-3^+b+-f\";\n" +
+      "          for (var e = [], f = 0, g = 0; g < a.length; g++) {\n" +
+      "              var m = a.charCodeAt(g);\n" +
+      "              128 > m ? e[f++] = m : (2048 > m ? e[f++] = m >> 6 | 192 : (55296 == (m & 64512) && g + 1 < a.length && 56320 == (a.charCodeAt(g + 1) & 64512) ? (m = 65536 + ((m & 1023) << 10) + (a.charCodeAt(++g) & 1023),\n" +
+      "              e[f++] = m >> 18 | 240,\n" +
+      "              e[f++] = m >> 12 & 63 | 128) : e[f++] = m >> 12 | 224,\n" +
+      "              e[f++] = m >> 6 & 63 | 128),\n" +
+      "              e[f++] = m & 63 | 128)\n" +
+      "          }\n" +
+      "          a = b;\n" +
+      "          for (f = 0; f < e.length; f++) a += e[f],\n" +
+      "          a = RL(a, $b);\n" +
+      "          a = RL(a, Zb);\n" +
+      "          a ^= b1 || 0;\n" +
+      "          0 > a && (a = (a & 2147483647) + 2147483648);\n" +
+      "          a %= 1E6;\n" +
+      "          return a.toString() + jd + (a ^ b)\n" +
+      "      };\n" +
+      "      function RL(a, b) {\n" +
+      "          var t = \"a\";\n" +
+      "          var Yb = \"+\";\n" +
+      "          for (var c = 0; c < b.length - 2; c += 3) {\n" +
+      "              var d = b.charAt(c + 2),\n" +
+      "              d = d >= t ? d.charCodeAt(0) - 87 : Number(d),\n" +
+      "              d = b.charAt(c + 1) == Yb ? a >>> d: a << d;\n" +
+      "              a = b.charAt(c) == Yb ? a + d & 4294967295 : a ^ d\n" +
+      "          }\n" +
+      "          return a\n" +
+      "      }";
 }

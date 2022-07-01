@@ -154,7 +154,8 @@ public class TranslateTask extends Task.Backgroundable {
     for (PsiElement value : mValues) {
       if (progressIndicator.isCanceled()) break;
 
-      if (value instanceof XmlTag xmlTag) {
+      if (value instanceof XmlTag) {
+        XmlTag xmlTag = (XmlTag) value;
         if (!mValueService.isTranslatable(xmlTag)) {
           translatedValues.add(value);
           continue;
@@ -173,8 +174,10 @@ public class TranslateTask extends Task.Backgroundable {
         );
         translatedValues.add(translateValue);
         switch (translateValue.getName()) {
-          case NAME_TAG_STRING -> doTranslate(progressIndicator, toLanguage, translateValue);
-          case NAME_TAG_STRING_ARRAY, NAME_TAG_PLURALS -> {
+          case NAME_TAG_STRING:
+            doTranslate(progressIndicator, toLanguage, translateValue);
+          case NAME_TAG_STRING_ARRAY:
+          case NAME_TAG_PLURALS: {
             XmlTag[] subTags = ApplicationManager.getApplication()
                 .runReadAction((Computable<XmlTag[]>) translateValue::getSubTags);
             for (XmlTag subTag : subTags) {
@@ -198,7 +201,8 @@ public class TranslateTask extends Task.Backgroundable {
         .runReadAction((Computable<XmlTagValue>) xmlTag::getValue);
     XmlTagChild[] children = xmlTagValue.getChildren();
     for (XmlTagChild child : children) {
-      if (child instanceof XmlText xmlText) {
+      if (child instanceof XmlText) {
+        XmlText xmlText = (XmlText) child;
         String text = ApplicationManager.getApplication().runReadAction((Computable<String>) xmlText::getText);
         if (TextUtil.isEmptyOrSpacesLineBreak(text)) {
           continue;
