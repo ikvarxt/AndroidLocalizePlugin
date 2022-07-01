@@ -29,8 +29,11 @@ import java.util.Objects;
  */
 public final class Lang implements Cloneable {
   private final int id;
+  // language code, such as en, ar ect.
   private final String code;
+  // localized language name
   private final String name;
+  // readable english name for the language
   private final String englishName;
   private String translationCode;
 

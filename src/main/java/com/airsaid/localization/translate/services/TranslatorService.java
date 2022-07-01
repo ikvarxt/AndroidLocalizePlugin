@@ -20,6 +20,7 @@ package com.airsaid.localization.translate.services;
 import com.airsaid.localization.translate.AbstractTranslator;
 import com.airsaid.localization.translate.impl.ali.AliTranslator;
 import com.airsaid.localization.translate.impl.baidu.BaiduTranslator;
+import com.airsaid.localization.translate.impl.customgoogle.CustomGoogleTranslator;
 import com.airsaid.localization.translate.impl.google.GoogleTranslator;
 import com.airsaid.localization.translate.impl.googleapi.GoogleApiTranslator;
 import com.airsaid.localization.translate.impl.microsoft.MicrosoftTranslator;
@@ -65,6 +66,10 @@ public final class TranslatorService {
     GoogleTranslator googleTranslator = new GoogleTranslator();
     translators.put(googleTranslator.getKey(), googleTranslator);
     defaultTranslator = googleTranslator;
+
+    // this couldn't work
+    CustomGoogleTranslator customGoogleTranslator = new CustomGoogleTranslator();
+    translators.put(customGoogleTranslator.getKey(), customGoogleTranslator);
 
     GoogleApiTranslator googleApiTranslator = new GoogleApiTranslator();
     translators.put(googleApiTranslator.getKey(), googleApiTranslator);

@@ -286,11 +286,24 @@ public final class AndroidValuesService {
 
     for (VirtualFile subDirs : resourceDir.getChildren()) {
       String dirName = subDirs.getName();
-      if (dirName.startsWith(NAME_DEFAULT_VALUES + '-')) {
-        String langCode = dirName.split("-", 2)[1];
-        Lang lang = Languages.getLang(langCode);
+      if (dirName.startsWith(NAME_DEFAULT_VALUES.concat("-"))) {
+        // split dir name to three parts: values; language code; region code
+        String[] destructDirName = dirName.split("-");
 
-        if (lang != null) res.add(lang);
+        String langCode = destructDirName[1];
+        // if it has region, set it
+        if (destructDirName.length > 2) {
+          String region = destructDirName[2];
+
+          Lang langWithRegion = Languages.getLang(langCode.concat("-").concat(region));
+          if (langWithRegion != null) res.add(langWithRegion);
+          continue;
+        }
+
+        Lang lang = Languages.getLang(langCode);
+        if (lang != null && !res.contains(lang)) {
+          res.add(lang);
+        }
       }
     }
 

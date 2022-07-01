@@ -41,6 +41,8 @@ import java.util.List;
 public class TranslateAction extends AnAction {
 
   private Project mProject;
+  // resources dir file
+  private VirtualFile resourcesDir;
   // the original strings.xml file that stores in res/ directory
   private PsiFile mValueFile;
   private List<PsiElement> mValues;
@@ -50,9 +52,9 @@ public class TranslateAction extends AnAction {
   public void actionPerformed(AnActionEvent e) {
     mProject = e.getRequiredData(CommonDataKeys.PROJECT);
     // TODO: 6/30/22 should here using PSI_FILE
-    VirtualFile resDir = e.getRequiredData(CommonDataKeys.VIRTUAL_FILE);
+    resourcesDir = e.getRequiredData(CommonDataKeys.VIRTUAL_FILE);
 
-    mValueFile = mValueService.getDefaultValuesPsiFile(mProject, resDir);
+    mValueFile = mValueService.getDefaultValuesPsiFile(mProject, resourcesDir);
 
     SettingsState.getInstance().initSetting();
 
@@ -97,6 +99,9 @@ public class TranslateAction extends AnAction {
       @Override
       public void onTranslateSuccess() {
         NotificationUtil.notifyInfo(mProject, "Translation completed!");
+
+        // TODO: 6/30/22 check if this refresh is correct
+        resourcesDir.refresh(false, true);
       }
 
       @Override

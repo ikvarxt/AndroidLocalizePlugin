@@ -63,6 +63,9 @@ public class TranslateTask extends Task.Backgroundable {
   private static final Logger LOG = Logger.getInstance(TranslateTask.class);
 
   private final List<Lang> mToLanguages;
+  /**
+   * original strings key set
+   */
   private final List<PsiElement> mValues;
   private final VirtualFile mValueFile;
   private final TranslatorService mTranslatorService;
@@ -99,24 +102,32 @@ public class TranslateTask extends Task.Backgroundable {
 
   @Override
   public void run(@NotNull ProgressIndicator progressIndicator) {
+    if (myProject == null) return;
+
     boolean isOverwriteExistingString = PropertiesComponent.getInstance(myProject)
         .getBoolean(Constants.KEY_IS_OVERWRITE_EXISTING_STRING);
     LOG.info("run isOverwriteExistingString: " + isOverwriteExistingString);
 
+    // start to translate to target languages
     for (Lang toLanguage : mToLanguages) {
       if (progressIndicator.isCanceled()) break;
 
       progressIndicator.setText("Translating in the " + toLanguage.getEnglishName() + " language...");
 
+      // find res dir
       VirtualFile resourceDir = mValueFile.getParent().getParent();
       String valueFileName = mValueFile.getName();
+      // find target values file in psi format
       PsiFile toValuePsiFile = mValueService.getValuePsiFile(myProject, resourceDir, toLanguage, valueFileName);
       LOG.info("Translating language: " + toLanguage.getEnglishName() + ", toValuePsiFile: " + toValuePsiFile);
+      // current language's values dir does not exists
       if (toValuePsiFile != null) {
+        // load target strings EntrySet
         List<PsiElement> toValues = mValueService.loadValues(toValuePsiFile);
         Map<String, PsiElement> toValuesMap = toValues.stream().collect(Collectors.toMap(
             psiElement -> {
               if (psiElement instanceof XmlTag)
+                // read name attribute in <string/> tag
                 return ApplicationManager.getApplication().runReadAction((Computable<String>) () ->
                     ((XmlTag) psiElement).getAttributeValue("name"));
               else return UUID.randomUUID().toString();
@@ -143,8 +154,7 @@ public class TranslateTask extends Task.Backgroundable {
     for (PsiElement value : mValues) {
       if (progressIndicator.isCanceled()) break;
 
-      if (value instanceof XmlTag) {
-        XmlTag xmlTag = (XmlTag) value;
+      if (value instanceof XmlTag xmlTag) {
         if (!mValueService.isTranslatable(xmlTag)) {
           translatedValues.add(value);
           continue;
@@ -163,17 +173,14 @@ public class TranslateTask extends Task.Backgroundable {
         );
         translatedValues.add(translateValue);
         switch (translateValue.getName()) {
-          case NAME_TAG_STRING:
-            doTranslate(progressIndicator, toLanguage, translateValue);
-            break;
-          case NAME_TAG_STRING_ARRAY:
-          case NAME_TAG_PLURALS:
+          case NAME_TAG_STRING -> doTranslate(progressIndicator, toLanguage, translateValue);
+          case NAME_TAG_STRING_ARRAY, NAME_TAG_PLURALS -> {
             XmlTag[] subTags = ApplicationManager.getApplication()
                 .runReadAction((Computable<XmlTag[]>) translateValue::getSubTags);
             for (XmlTag subTag : subTags) {
               doTranslate(progressIndicator, toLanguage, subTag);
             }
-            break;
+          }
         }
       } else {
         translatedValues.add(value);
@@ -191,14 +198,12 @@ public class TranslateTask extends Task.Backgroundable {
         .runReadAction((Computable<XmlTagValue>) xmlTag::getValue);
     XmlTagChild[] children = xmlTagValue.getChildren();
     for (XmlTagChild child : children) {
-      if (child instanceof XmlText) {
-        XmlText xmlText = (XmlText) child;
-        String text = ApplicationManager.getApplication()
-            .runReadAction((Computable<String>) xmlText::getText);
+      if (child instanceof XmlText xmlText) {
+        String text = ApplicationManager.getApplication().runReadAction((Computable<String>) xmlText::getText);
         if (TextUtil.isEmptyOrSpacesLineBreak(text)) {
           continue;
         }
-        String translatedText = mTranslatorService.doTranslate(Languages.AUTO, toLanguage, text);
+        String translatedText = mTranslatorService.doTranslate(Languages.ENGLISH, toLanguage, text);
         ApplicationManager.getApplication().runReadAction(() -> xmlText.setValue(translatedText));
       }
     }

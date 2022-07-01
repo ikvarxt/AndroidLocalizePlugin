@@ -147,6 +147,10 @@ public class Languages {
   public static final Lang YUCATEC_MAYA = new Lang(117, "yua", "Yucatec Maya", "Yucatec Maya");
 
   public static final Lang DEFAULT = new Lang(118, "", "Default", "Deflault");
+  public static final Lang CHINESE_TRADITIONAL_HK = new Lang(119, "zh-rHK,", "正體中文-香港", "Chinese Traditional HK");
+  public static final Lang CHINESE = new Lang(120, "zh", "中文-简体", "Chinese");
+  public static final Lang HINDI_IN = new Lang(121, "hi-rIN", "Hindi r indonisa", "Hindi r-Indonisa");
+
 
   private static final Map<Integer, Lang> sLanguages;
 
@@ -270,7 +274,10 @@ public class Languages {
     sLanguages.put(115, TIGRINYA);
     sLanguages.put(116, TONGAN);
     sLanguages.put(117, YUCATEC_MAYA);
+
     sLanguages.put(118, DEFAULT);
+    sLanguages.put(119, CHINESE_TRADITIONAL_HK);
+    sLanguages.put(120, CHINESE);
   }
 
   public static List<Lang> getLanguages() {
@@ -282,6 +289,12 @@ public class Languages {
     return sLanguages.get(id);
   }
 
+  /**
+   * Get language instance with language code
+   *
+   * @param code language code
+   * @return matched Lang
+   */
   @Nullable
   public static Lang getLang(String code) {
     for (Lang lang : sLanguages.values()) {

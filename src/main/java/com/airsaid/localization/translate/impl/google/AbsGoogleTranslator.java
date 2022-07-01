@@ -44,12 +44,12 @@ public abstract class AbsGoogleTranslator extends AbstractTranslator {
   public List<Lang> getSupportedLanguages() {
     if (supportedLanguages == null) {
       List<Lang> languages = Languages.getLanguages();
-      supportedLanguages = new ArrayList<>(104);
-      for (int i = 1; i <= 104; i++) {
+      supportedLanguages = new ArrayList<>(languages.size());
+      for (int i = 1; i <= languages.size()-1; i++) {
         Lang lang = languages.get(i);
-        if (lang.equals(Languages.CHINESE_SIMPLIFIED)) {
+        if (lang.equals(Languages.CHINESE_SIMPLIFIED) || lang.equals(Languages.CHINESE)) {
           lang = lang.setTranslationCode("zh-CN");
-        } else if (lang.equals(Languages.CHINESE_TRADITIONAL)) {
+        } else if (lang.equals(Languages.CHINESE_TRADITIONAL) || lang.equals(Languages.CHINESE_TRADITIONAL_HK)) {
           lang = lang.setTranslationCode("zh-TW");
         } else if (lang.equals(Languages.FILIPINO)) {
           lang = lang.setTranslationCode("tl");

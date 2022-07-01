@@ -45,37 +45,37 @@ public abstract class AbstractTranslator implements Translator, TranslatorConfig
 
   @Override
   public String doTranslate(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException {
-    checkSupportedLanguages(fromLang, toLang, text);
+    final Lang toLanguage = checkSupportedLanguages(fromLang, toLang, text);
 
-    String requestUrl = getRequestUrl(fromLang, toLang, text);
+    String requestUrl = getRequestUrl(fromLang, toLanguage, text);
     RequestBuilder requestBuilder = HttpRequests.post(requestUrl, CONTENT_TYPE);
     configureRequestBuilder(requestBuilder);
 
     try {
       return requestBuilder.connect(request -> {
-        String requestParams = getRequestParams(fromLang, toLang, text)
+        String requestParams = getRequestParams(fromLang, toLanguage, text)
             .stream()
             .map(pair -> {
               try {
                 return pair.first.concat("=").concat(URLEncoder.encode(pair.second, StandardCharsets.UTF_8.name()));
               } catch (UnsupportedEncodingException e) {
-                throw new TranslationException(fromLang, toLang, text, e);
+                throw new TranslationException(fromLang, toLanguage, text, e);
               }
             })
             .collect(Collectors.joining("&"));
         if (!requestParams.isEmpty()) {
           request.write(requestParams);
         }
-        String requestBody = getRequestBody(fromLang, toLang, text);
+        String requestBody = getRequestBody(fromLang, toLanguage, text);
         if (!requestBody.isEmpty()) {
           request.write(URLEncoder.encode(requestBody, StandardCharsets.UTF_8.name()));
         }
         String resultText = request.readString();
-        return parsingResult(fromLang, toLang, text, resultText);
+        return parsingResult(fromLang, toLanguage, text, resultText);
       });
     } catch (IOException e) {
       e.printStackTrace();
-      throw new TranslationException(fromLang, toLang, text, e);
+      throw new TranslationException(fromLang, toLanguage, text, e);
     }
   }
 
@@ -143,10 +143,12 @@ public abstract class AbstractTranslator implements Translator, TranslatorConfig
     throw new UnsupportedOperationException();
   }
 
-  protected void checkSupportedLanguages(Lang fromLang, Lang toLang, String text) {
+  protected Lang checkSupportedLanguages(Lang fromLang, Lang toLang, String text) {
     List<Lang> supportedLanguages = getSupportedLanguages();
+    // 原先此处检查没有将 toLang 的更改字段 translateCode 应用到后续流程中
     if (!supportedLanguages.contains(toLang)) {
       throw new TranslationException(fromLang, toLang, text, toLang.getEnglishName() + " is not supported.");
     }
+    return supportedLanguages.get(supportedLanguages.indexOf(toLang));
   }
 }
