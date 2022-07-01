@@ -31,6 +31,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -117,15 +118,15 @@ public final class TranslatorService {
     return selectedTranslator;
   }
 
-  public void doTranslateByAsync(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text, @NotNull Consumer<String> consumer) {
+  public void doTranslateByAsync(@NotNull Project project, @NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text, @NotNull Consumer<String> consumer) {
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
-      final String translatedText = doTranslate(fromLang, toLang, text);
+      final String translatedText = doTranslate(project, fromLang, toLang, text);
       ApplicationManager.getApplication().invokeLater(() ->
           consumer.accept(translatedText));
     });
   }
 
-  public String doTranslate(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) {
+  public String doTranslate(@NotNull Project project, @NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) {
     LOG.info(String.format("doTranslate fromLang: %s, toLang: %s, text: %s", fromLang, toLang, text));
 
     if (isEnableCache) {
@@ -136,7 +137,7 @@ public final class TranslatorService {
       }
     }
 
-    String result = selectedTranslator.doTranslate(fromLang, toLang, text);
+    String result = selectedTranslator.doTranslate(project, fromLang, toLang, text);
     LOG.info(String.format("doTranslate result: %s", result));
     for (TranslationInterceptor interceptor : translationInterceptors) {
       result = interceptor.process(result);

@@ -19,6 +19,7 @@ package com.airsaid.localization.translate;
 
 import com.airsaid.localization.translate.impl.google.GoogleTranslator;
 import com.airsaid.localization.translate.lang.Lang;
+import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,6 +41,6 @@ public interface Translator {
    * @return the translated text.
    * @throws TranslationException this exception is thrown if the translation failed.
    */
-  String doTranslate(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException;
+  String doTranslate(@NotNull Project project, @NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException;
 
 }

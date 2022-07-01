@@ -19,7 +19,9 @@ package com.airsaid.localization.translate;
 
 import com.airsaid.localization.config.SettingsState;
 import com.airsaid.localization.translate.lang.Lang;
+import com.airsaid.localization.utils.NotificationUtil;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.util.io.HttpRequests;
 import com.intellij.util.io.RequestBuilder;
@@ -44,7 +46,7 @@ public abstract class AbstractTranslator implements Translator, TranslatorConfig
   private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
 
   @Override
-  public String doTranslate(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException {
+  public String doTranslate(@NotNull Project project, @NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException {
     final Lang toLanguage = checkSupportedLanguages(fromLang, toLang, text);
 
     String requestUrl = getRequestUrl(fromLang, toLanguage, text);
@@ -75,7 +77,8 @@ public abstract class AbstractTranslator implements Translator, TranslatorConfig
       });
     } catch (IOException e) {
       e.printStackTrace();
-      throw new TranslationException(fromLang, toLanguage, text, e);
+      NotificationUtil.notifyError(project, new TranslationException(fromLang, toLanguage, text, e).toString());
+      return "";
     }
   }
 

@@ -207,7 +207,7 @@ public class TranslateTask extends Task.Backgroundable {
         if (TextUtil.isEmptyOrSpacesLineBreak(text)) {
           continue;
         }
-        String translatedText = mTranslatorService.doTranslate(Languages.ENGLISH, toLanguage, text);
+        String translatedText = mTranslatorService.doTranslate(myProject,Languages.ENGLISH, toLanguage, text);
         ApplicationManager.getApplication().runReadAction(() -> xmlText.setValue(translatedText));
       }
     }

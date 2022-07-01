@@ -27,6 +27,7 @@ import com.aliyun.alimt20181012.models.TranslateGeneralResponse;
 import com.aliyun.alimt20181012.models.TranslateGeneralResponseBody;
 import com.aliyun.teaopenapi.models.Config;
 import com.aliyun.teautil.models.RuntimeOptions;
+import com.intellij.openapi.project.Project;
 import icons.PluginIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -105,7 +106,7 @@ public class AliTranslator extends AbstractTranslator {
   }
 
   @Override
-  public String doTranslate(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException {
+  public String doTranslate(@NotNull Project project,@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) throws TranslationException {
     checkSupportedLanguages(fromLang, toLang, text);
 
     config.setAccessKeyId(getAppId()).setAccessKeySecret(getAppKey()).setEndpoint(ENDPOINT);
