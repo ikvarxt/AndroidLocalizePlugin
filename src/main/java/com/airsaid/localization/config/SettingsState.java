@@ -144,6 +144,6 @@ public final class SettingsState implements PersistentStateComponent<SettingsSta
     public Map<String, String> appIds = new HashMap<>();
     public boolean isEnableCache = true;
     public int maxCacheSize = 500;
-    public int translationInterval = 2; // 2 second
+    public int translationInterval = 1; // 1 second
   }
 }
