@@ -23,6 +23,7 @@ import com.airsaid.localization.translate.lang.Lang;
 import com.airsaid.localization.translate.lang.Languages;
 import com.airsaid.localization.translate.services.TranslatorService;
 import com.airsaid.localization.utils.TextUtil;
+import com.intellij.dvcs.repo.Repository;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
@@ -39,16 +40,19 @@ import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlTagChild;
 import com.intellij.psi.xml.XmlTagValue;
 import com.intellij.psi.xml.XmlText;
+import git4idea.GitUtil;
+import git4idea.commands.Git;
+import git4idea.commands.GitCommandResult;
+import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -104,9 +108,12 @@ public class TranslateTask extends Task.Backgroundable {
   public void run(@NotNull ProgressIndicator progressIndicator) {
     if (myProject == null) return;
 
+    // TODO: 7/4/22 discuss if remove this in the future
     boolean isOverwriteExistingString = PropertiesComponent.getInstance(myProject)
         .getBoolean(Constants.KEY_IS_OVERWRITE_EXISTING_STRING);
     LOG.info("run isOverwriteExistingString: " + isOverwriteExistingString);
+
+    Set<String> changedValue = getVcsChangedValues(myProject, mValueFile);
 
     // start to translate to target languages
     for (Lang toLanguage : mToLanguages) {
@@ -120,7 +127,7 @@ public class TranslateTask extends Task.Backgroundable {
       // find target values file in psi format
       PsiFile toValuePsiFile = mValueService.getValuePsiFile(myProject, resourceDir, toLanguage, valueFileName);
       LOG.info("Translating language: " + toLanguage.getEnglishName() + ", toValuePsiFile: " + toValuePsiFile);
-      // current language's values dir does not exists
+      // when current language's values xml file is exists
       if (toValuePsiFile != null) {
         // load target strings EntrySet
         List<PsiElement> toValues = mValueService.loadValues(toValuePsiFile);
@@ -134,10 +141,10 @@ public class TranslateTask extends Task.Backgroundable {
             },
             Function.identity()
         ));
-        List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, toValuesMap, isOverwriteExistingString);
+        List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, toValuesMap, isOverwriteExistingString, changedValue);
         writeTranslatedValues(progressIndicator, new File(toValuePsiFile.getVirtualFile().getPath()), translatedValues);
       } else {
-        List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, null, isOverwriteExistingString);
+        List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, null, isOverwriteExistingString, changedValue);
         File valueFile = mValueService.getValueFile(resourceDir, toLanguage, valueFileName);
         writeTranslatedValues(progressIndicator, valueFile, translatedValues);
       }
@@ -147,15 +154,18 @@ public class TranslateTask extends Task.Backgroundable {
   private List<PsiElement> doTranslate(@NotNull ProgressIndicator progressIndicator,
                                        @NotNull Lang toLanguage,
                                        @Nullable Map<String, PsiElement> toValues,
-                                       boolean isOverwrite) {
+                                       boolean isOverwrite,
+                                       @NotNull Set<String> dirtyValues) {
     LOG.info("doTranslate toLanguage: " + toLanguage.getEnglishName() + ", toValues: " + toValues + ", isOverwrite: " + isOverwrite);
 
+    // stores translate result values
     List<PsiElement> translatedValues = new ArrayList<>();
     for (PsiElement value : mValues) {
       if (progressIndicator.isCanceled()) break;
 
       if (value instanceof XmlTag) {
         XmlTag xmlTag = (XmlTag) value;
+        // add the value that shouldn't be translated
         if (!mValueService.isTranslatable(xmlTag)) {
           translatedValues.add(value);
           continue;
@@ -164,7 +174,9 @@ public class TranslateTask extends Task.Backgroundable {
         String name = ApplicationManager.getApplication().runReadAction((Computable<String>) () ->
             xmlTag.getAttributeValue("name")
         );
-        if (!isOverwrite && toValues != null && toValues.containsKey(name)) {
+
+        // if don't overwrite and target strings already have the string, add it
+        if (!isOverwrite && !dirtyValues.contains(name) && toValues != null && toValues.containsKey(name)) {
           translatedValues.add(toValues.get(name));
           continue;
         }
@@ -175,6 +187,7 @@ public class TranslateTask extends Task.Backgroundable {
         translatedValues.add(translateValue);
         switch (translateValue.getName()) {
           case NAME_TAG_STRING:
+            // translate the copy of xmlTag
             doTranslate(progressIndicator, toLanguage, translateValue);
           case NAME_TAG_STRING_ARRAY:
           case NAME_TAG_PLURALS: {
@@ -204,10 +217,11 @@ public class TranslateTask extends Task.Backgroundable {
       if (child instanceof XmlText) {
         XmlText xmlText = (XmlText) child;
         String text = ApplicationManager.getApplication().runReadAction((Computable<String>) xmlText::getText);
+        // if target value is blank, continue
         if (TextUtil.isEmptyOrSpacesLineBreak(text)) {
           continue;
         }
-        String translatedText = mTranslatorService.doTranslate(myProject,Languages.ENGLISH, toLanguage, text);
+        String translatedText = mTranslatorService.doTranslate(myProject, Languages.ENGLISH, toLanguage, text);
         ApplicationManager.getApplication().runReadAction(() -> xmlText.setValue(translatedText));
       }
     }
@@ -234,6 +248,43 @@ public class TranslateTask extends Task.Backgroundable {
       ApplicationManager.getApplication().invokeLater(() ->
           FileEditorManager.getInstance(myProject).openFile(virtualFile, true));
     }
+  }
+
+  /**
+   * get the string names of local vcs changed value
+   *
+   * @param project    current project
+   * @param valuesFile the default values file
+   * @return set of changed string names
+   */
+  private Set<String> getVcsChangedValues(Project project, VirtualFile valuesFile) {
+    Set<String> set = new HashSet<>();
+
+    Git git = Git.getInstance();
+    GitRepository repository = GitUtil.getRepositoryManager(project).getRepositoryForFile(valuesFile);
+    if (repository == null) return set;
+
+    GitCommandResult result = git.diff(repository, List.of("-U0"), valuesFile.getPath());
+
+    List<String> resultOutput = result.getOutput();
+
+    Pattern pattern = Pattern.compile("name=\"[\\w]*\"");
+
+    for (String line : resultOutput) {
+      // filter out diff output like "+++ b/app/src/main/res/values/strings.xml"
+      if (line.startsWith("+") && line.indexOf(1) != '+') {
+        Matcher matcher = pattern.matcher(line);
+        if (matcher.find()) {
+          String namePattern = "name=\"";
+          int startQuoteIndex = line.indexOf(namePattern) + namePattern.length();
+          int endQuoteIndex = line.indexOf("\"", startQuoteIndex);
+          String name = line.substring(startQuoteIndex, endQuoteIndex);
+          set.add(name);
+        }
+      }
+    }
+
+    return set;
   }
 
   private List<Lang> getExistsLanguages() {

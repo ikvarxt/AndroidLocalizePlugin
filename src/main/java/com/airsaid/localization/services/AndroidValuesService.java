@@ -55,9 +55,9 @@ public final class AndroidValuesService {
 
   private static final Logger LOG = Logger.getInstance(AndroidValuesService.class);
 
-  private static final String NAME_STRINGS_FILE = "strings.xml";
-  private static final String NAME_PLURALS_FILE = "plurals.xml";
-  private static final String NAME_ARRAYS_FILE = "arrays.xml";
+  public static final String NAME_STRINGS_FILE = "strings.xml";
+  public static final String NAME_PLURALS_FILE = "plurals.xml";
+  public static final String NAME_ARRAYS_FILE = "arrays.xml";
 
   private static final String NAME_DEFAULT_VALUES = "values";
 
@@ -200,6 +200,19 @@ public final class AndroidValuesService {
         return null;
       }
       return PsiManager.getInstance(project).findFile(virtualFile);
+    });
+  }
+
+  /**
+   * get the default strings xml virtual file
+   * @param project current project
+   * @param resourceDir resource directory virtual file
+   * @return the default strings xml file
+   */
+  @Nullable
+  public VirtualFile getDefaultValuesVirtualFile(@NotNull Project project, @NotNull VirtualFile resourceDir) {
+    return ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () -> {
+      return LocalFileSystem.getInstance().findFileByIoFile(getDefaultValueFile(resourceDir));
     });
   }
 
