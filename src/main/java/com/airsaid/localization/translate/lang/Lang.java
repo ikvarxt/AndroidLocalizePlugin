@@ -27,15 +27,15 @@ import java.util.Objects;
  *
  * @author airsaid
  */
-public final class Lang implements Cloneable {
-  private final int id;
+public class Lang implements Cloneable {
+  protected final int id;
   // language code, such as en, ar ect.
-  private final String code;
+  protected final String code;
   // localized language name
-  private final String name;
+  protected final String name;
   // readable english name for the language
-  private final String englishName;
-  private String translationCode;
+  protected final String englishName;
+  protected String translationCode;
 
   public Lang(int id, String code, String name, String englishName) {
     this.id = id;

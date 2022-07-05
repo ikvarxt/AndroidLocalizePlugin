@@ -57,4 +57,7 @@ public interface TranslatorConfigurable {
 
   @Nullable
   String getApplyAppIdUrl();
+
+  @NotNull
+  String getFallbackTranslator();
 }

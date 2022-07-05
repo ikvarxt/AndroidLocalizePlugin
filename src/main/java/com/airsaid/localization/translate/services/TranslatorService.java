@@ -18,9 +18,11 @@
 package com.airsaid.localization.translate.services;
 
 import com.airsaid.localization.translate.AbstractTranslator;
+import com.airsaid.localization.translate.TranslationException;
 import com.airsaid.localization.translate.impl.ali.AliTranslator;
 import com.airsaid.localization.translate.impl.baidu.BaiduTranslator;
 import com.airsaid.localization.translate.impl.customgoogle.CustomGoogleTranslator;
+import com.airsaid.localization.translate.impl.deepl.DeeplTranslator;
 import com.airsaid.localization.translate.impl.google.GoogleTranslator;
 import com.airsaid.localization.translate.impl.googleapi.GoogleApiTranslator;
 import com.airsaid.localization.translate.impl.microsoft.MicrosoftTranslator;
@@ -56,6 +58,7 @@ public final class TranslatorService {
   private final List<TranslationInterceptor> translationInterceptors;
   private boolean isEnableCache = true;
   private int intervalTime;
+  private AbstractTranslator fallbackTranslator;
 
   public interface TranslationInterceptor {
     String process(String text);
@@ -74,6 +77,9 @@ public final class TranslatorService {
 
     GoogleApiTranslator googleApiTranslator = new GoogleApiTranslator();
     translators.put(googleApiTranslator.getKey(), googleApiTranslator);
+
+    DeeplTranslator deeplTranslator = new DeeplTranslator();
+    translators.put(deeplTranslator.getKey(), deeplTranslator);
 
     MicrosoftTranslator microsoftTranslator = new MicrosoftTranslator();
     translators.put(microsoftTranslator.getKey(), microsoftTranslator);
@@ -137,7 +143,25 @@ public final class TranslatorService {
       }
     }
 
-    String result = selectedTranslator.doTranslate(project, fromLang, toLang, text);
+    // the translation result
+    String result;
+    // this Lang instance contains the correct TranslationCode
+    Lang toLanguage = selectedTranslator.checkSupportedLanguages(fromLang, toLang, text);
+    // turns out target language is not supported by current translator, fallback to specific translator
+    if (toLanguage == null) {
+      if (fallbackTranslator == null) {
+        fallbackTranslator = translators.get(selectedTranslator.getFallbackTranslator());
+      }
+      toLanguage = fallbackTranslator.checkSupportedLanguages(fromLang, toLang, text);
+      // if it is still null, throw exception
+      if (toLanguage == null) {
+        throw new TranslationException(fromLang, toLang, text, "is not supported by current translator");
+      }
+      result = fallbackTranslator.doTranslate(project, fromLang, toLang, text);
+    } else {
+      result = selectedTranslator.doTranslate(project, fromLang, toLang, text);
+    }
+
     LOG.info(String.format("doTranslate result: %s", result));
     for (TranslationInterceptor interceptor : translationInterceptors) {
       result = interceptor.process(result);

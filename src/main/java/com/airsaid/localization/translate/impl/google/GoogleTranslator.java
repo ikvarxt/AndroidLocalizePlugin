@@ -32,7 +32,7 @@ import java.util.List;
  * @author airsaid
  */
 public class GoogleTranslator extends AbsGoogleTranslator {
-  private static final String KEY = "Google";
+  public static final String KEY = "Google";
 
   public static final String HOST_URL = "https://translate.googleapis.com";
   private static final String BASE_URL = HOST_URL.concat("/translate_a/single");

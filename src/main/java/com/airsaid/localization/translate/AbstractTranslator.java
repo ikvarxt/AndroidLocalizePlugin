@@ -18,6 +18,7 @@
 package com.airsaid.localization.translate;
 
 import com.airsaid.localization.config.SettingsState;
+import com.airsaid.localization.translate.impl.google.GoogleTranslator;
 import com.airsaid.localization.translate.lang.Lang;
 import com.airsaid.localization.utils.NotificationUtil;
 import com.intellij.openapi.diagnostic.Logger;
@@ -146,12 +147,32 @@ public abstract class AbstractTranslator implements Translator, TranslatorConfig
     throw new UnsupportedOperationException();
   }
 
-  protected Lang checkSupportedLanguages(Lang fromLang, Lang toLang, String text) {
+  /**
+   * check if current translator supports target language
+   *
+   * @param fromLang source language
+   * @param toLang   target language
+   * @param text     text to be translated
+   * @return target language instance
+   */
+  @Nullable
+  public Lang checkSupportedLanguages(Lang fromLang, Lang toLang, String text) {
     List<Lang> supportedLanguages = getSupportedLanguages();
-    // 原先此处检查没有将 toLang 的更改字段 translateCode 应用到后续流程中
-    if (!supportedLanguages.contains(toLang)) {
-      throw new TranslationException(fromLang, toLang, text, toLang.getEnglishName() + " is not supported.");
+    // 原先此处检查没有将 toLang 的更改字段 translationCode 应用到后续流程中
+    if (!supportedLanguages.contains(toLang) || !supportedLanguages.contains(fromLang)) {
+//      throw new TranslationException(fromLang, toLang, text, toLang.getEnglishName() + " is not supported.");
+      return null;
     }
     return supportedLanguages.get(supportedLanguages.indexOf(toLang));
+  }
+
+  /**
+   * return the config fallback translator when something happened
+   *
+   * @return the KEY of fallback translator
+   */
+  @Override
+  public @NotNull String getFallbackTranslator() {
+    return GoogleTranslator.KEY;
   }
 }
