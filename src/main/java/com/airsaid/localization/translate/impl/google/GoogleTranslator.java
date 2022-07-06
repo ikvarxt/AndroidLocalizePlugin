@@ -62,7 +62,7 @@ public class GoogleTranslator extends AbsGoogleTranslator {
     return new UrlBuilder(BASE_URL)
         .addQueryParameter("sl", fromLang.getTranslationCode()) // source language code (auto for auto detection)
         .addQueryParameter("tl", toLang.getTranslationCode()) // translation language
-        .addQueryParameter("client", "webapp") // client of request (guess)
+        .addQueryParameter("client", "gtx") // client of request (guess)
         .addQueryParameters("dt", "t") // specify what to return
         .addQueryParameter("dj", "1") // json response with names
         .addQueryParameter("ie", "UTF-8") // input encoding
