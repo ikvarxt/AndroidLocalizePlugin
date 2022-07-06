@@ -15,6 +15,14 @@ repositories {
   mavenCentral()
 }
 
+//configurations{
+//  all {
+//    // 再也不要让我在项目里看到这个东西，md
+//    // 之后如果引入了新依赖，一定要检查是否项目依赖了此包，干掉他！
+//    exclude(group = "pull-parser")
+//  }
+//}
+
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
   pluginName.set(properties("pluginName"))

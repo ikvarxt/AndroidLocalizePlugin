@@ -19,7 +19,6 @@ package com.airsaid.localization.translate.services;
 
 import com.airsaid.localization.translate.AbstractTranslator;
 import com.airsaid.localization.translate.TranslationException;
-import com.airsaid.localization.translate.impl.ali.AliTranslator;
 import com.airsaid.localization.translate.impl.baidu.BaiduTranslator;
 import com.airsaid.localization.translate.impl.customgoogle.CustomGoogleTranslator;
 import com.airsaid.localization.translate.impl.deepl.DeeplTranslator;
@@ -89,9 +88,6 @@ public final class TranslatorService {
 
     YoudaoTranslator youdaoTranslator = new YoudaoTranslator();
     translators.put(youdaoTranslator.getKey(), youdaoTranslator);
-
-    AliTranslator aliTranslator = new AliTranslator();
-    translators.put(aliTranslator.getKey(), aliTranslator);
 
     cacheService = TranslationCacheService.getInstance();
 
