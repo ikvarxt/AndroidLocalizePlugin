@@ -22,8 +22,8 @@ import com.airsaid.localization.services.AndroidValuesService;
 import com.airsaid.localization.translate.lang.Lang;
 import com.airsaid.localization.translate.lang.Languages;
 import com.airsaid.localization.translate.services.TranslatorService;
+import com.airsaid.localization.utils.ExportExcelOperator;
 import com.airsaid.localization.utils.TextUtil;
-import com.intellij.dvcs.repo.Repository;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
@@ -115,10 +115,14 @@ public class TranslateTask extends Task.Backgroundable {
 
     Set<String> changedValue = getVcsChangedValues(myProject, mValueFile);
 
+    ExportExcelOperator operator = new ExportExcelOperator();
+    operator.fillDefaultStrings(mValues);
+
     // start to translate to target languages
-    for (Lang toLanguage : mToLanguages) {
+    for (int i = 0; i < mToLanguages.size(); i++) {
       if (progressIndicator.isCanceled()) break;
 
+      Lang toLanguage = mToLanguages.get(i);
       progressIndicator.setText("Translating in the " + toLanguage.getEnglishName() + " language...");
 
       // find res dir
@@ -133,22 +137,31 @@ public class TranslateTask extends Task.Backgroundable {
         List<PsiElement> toValues = mValueService.loadValues(toValuePsiFile);
         Map<String, PsiElement> toValuesMap = toValues.stream().collect(Collectors.toMap(
             psiElement -> {
-              if (psiElement instanceof XmlTag)
+              if (psiElement instanceof XmlTag) {
+                XmlTag xmlTag = (XmlTag) psiElement;
                 // read name attribute in <string/> tag
                 return ApplicationManager.getApplication().runReadAction((Computable<String>) () ->
-                    ((XmlTag) psiElement).getAttributeValue("name"));
-              else return UUID.randomUUID().toString();
+                    xmlTag.getAttributeValue("name"));
+              } else {
+                return UUID.randomUUID().toString();
+              }
             },
             Function.identity()
         ));
         List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, toValuesMap, isOverwriteExistingString, changedValue);
         writeTranslatedValues(progressIndicator, new File(toValuePsiFile.getVirtualFile().getPath()), translatedValues);
+        // TODO: 7/5/22 select a output store position
+        operator.writeLanguageColumn(i + 2, mValues, translatedValues, toLanguage);
       } else {
         List<PsiElement> translatedValues = doTranslate(progressIndicator, toLanguage, null, isOverwriteExistingString, changedValue);
         File valueFile = mValueService.getValueFile(resourceDir, toLanguage, valueFileName);
         writeTranslatedValues(progressIndicator, valueFile, translatedValues);
+        operator.writeLanguageColumn(i + 2, mValues, translatedValues, toLanguage);
       }
     }
+
+    File outputPath = mTranslatorService.getOutputExcelPath();
+    operator.saveToDisk(outputPath);
   }
 
   private List<PsiElement> doTranslate(@NotNull ProgressIndicator progressIndicator,
@@ -158,8 +171,9 @@ public class TranslateTask extends Task.Backgroundable {
                                        @NotNull Set<String> dirtyValues) {
     LOG.info("doTranslate toLanguage: " + toLanguage.getEnglishName() + ", toValues: " + toValues + ", isOverwrite: " + isOverwrite);
 
-    // stores translate result values
+    // stores translate result values, add it without translate means it has been translated
     List<PsiElement> translatedValues = new ArrayList<>();
+    // TODO: 7/5/22 passing the new original values
     for (PsiElement value : mValues) {
       if (progressIndicator.isCanceled()) break;
 
@@ -167,7 +181,8 @@ public class TranslateTask extends Task.Backgroundable {
         XmlTag xmlTag = (XmlTag) value;
         // add the value that shouldn't be translated
         if (!mValueService.isTranslatable(xmlTag)) {
-          translatedValues.add(value);
+          // TODO: 7/5/22 check if this is proper
+//          translatedValues.add(value);
           continue;
         }
 
@@ -175,7 +190,7 @@ public class TranslateTask extends Task.Backgroundable {
             xmlTag.getAttributeValue("name")
         );
 
-        // if don't overwrite and target strings already have the string, add it
+        // if it doesn't overwrite and target strings already have the string, add it
         if (!isOverwrite && !dirtyValues.contains(name) && toValues != null && toValues.containsKey(name)) {
           translatedValues.add(toValues.get(name));
           continue;
@@ -265,7 +280,6 @@ public class TranslateTask extends Task.Backgroundable {
     if (repository == null) return set;
 
     GitCommandResult result = git.diff(repository, List.of("-U0"), valuesFile.getPath());
-
     List<String> resultOutput = result.getOutput();
 
     Pattern pattern = Pattern.compile("name=\"[\\w]*\"");

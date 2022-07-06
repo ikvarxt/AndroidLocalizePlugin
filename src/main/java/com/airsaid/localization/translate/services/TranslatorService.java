@@ -36,6 +36,7 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,6 +59,8 @@ public final class TranslatorService {
   private boolean isEnableCache = true;
   private int intervalTime;
   private AbstractTranslator fallbackTranslator;
+
+  private File outputExcelPath;
 
   public interface TranslationInterceptor {
     String process(String text);
@@ -182,6 +185,14 @@ public final class TranslatorService {
 
   public void setTranslationInterval(int intervalTime) {
     this.intervalTime = intervalTime;
+  }
+
+  public void setOutputExcelPath(File path) {
+    this.outputExcelPath = path;
+  }
+
+  public File getOutputExcelPath() {
+    return outputExcelPath;
   }
 
   private String getCacheKey(@NotNull Lang fromLang, @NotNull Lang toLang, @NotNull String text) {
