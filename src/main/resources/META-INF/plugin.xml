@@ -68,12 +68,5 @@
                 description="Translate strings to other languages.">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
         </action>
-
-        <action class="com.airsaid.localization.action.TranslateOnlyChangesAction"
-                id="com.airsaid.localization.action.TranslateOnlyChangesAction"
-                text="Test Git Integration">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="after"
-                          relative-to-action="com.airsaid.localization.action.TranslateAction"/>
-        </action>
     </actions>
 </idea-plugin>
